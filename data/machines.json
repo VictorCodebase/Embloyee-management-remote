@@ -1,1 +1,11 @@
-
+{
+  "machines": [
+    {
+      "id": "9e8a681f543b9bc8",
+      "name": "Machine 9e8a681f: (9e8a681f543b9bc8)",
+      "allowed": false,
+      "lastSeen": "2025-07-31T10:12:36.110Z",
+      "dateAdded": "2025-07-31T09:35:11.153Z"
+    }
+  ]
+}

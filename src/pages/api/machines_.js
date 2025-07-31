@@ -1,4 +1,3 @@
-// pages/api/machines.js
 import { Redis } from "@upstash/redis";
 
 const redis = Redis.fromEnv();
@@ -14,20 +13,27 @@ async function setMachines(data) {
 }
 
 export default async function handler(req, res) {
+	const key = "machines";
+
 	try {
-		const { machineId, name, allowed } = req.body || {};
+		// if (req.method === "GET") {
+		// 	const data = await getMachines();
+		// 	return res.status(200).json(data);
+		// }
+		if (req.method === "GET") {
+			const machines = (await redis.get(key)) || [];
+			return res.status(200).json(machines);
+		}
+
+		const { machineId, name, allowed } = req.body;
+		if (!machineId) {
+			return res.status(400).json({ error: "Machine ID is required" });
+		}
+
 		const data = await getMachines();
 		const index = data.machines.findIndex((m) => m.id === machineId);
 
-		if (req.method === "GET") {
-			return res.status(200).json(data);
-		}
-
 		if (req.method === "POST") {
-			if (!machineId) {
-				return res.status(400).json({ error: "Machine ID is required" });
-			}
-
 			const machine = {
 				id: machineId,
 				name: name || `Machine ${machineId.substring(0, 8)}`,
@@ -47,8 +53,8 @@ export default async function handler(req, res) {
 		}
 
 		if (req.method === "PUT") {
-			if (!machineId || allowed === undefined) {
-				return res.status(400).json({ error: "Machine ID and allowed status are required" });
+			if (allowed === undefined) {
+				return res.status(400).json({ error: "Allowed status is required" });
 			}
 			if (index === -1) {
 				return res.status(404).json({ error: "Machine not found" });
@@ -62,10 +68,6 @@ export default async function handler(req, res) {
 		}
 
 		if (req.method === "DELETE") {
-			if (!machineId) {
-				return res.status(400).json({ error: "Machine ID is required" });
-			}
-
 			const initialLength = data.machines.length;
 			data.machines = data.machines.filter((m) => m.id !== machineId);
 

@@ -1,115 +1,147 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// pages/index.js
+import { useState, useEffect } from "react";
+import Head from "next/head";
 
 export default function Home() {
-  return (
-    <div
-      className={`${geistSans.className} ${geistMono.className} font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20`}
-    >
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/pages/index.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+	const [machines, setMachines] = useState([]);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState("");
+
+	useEffect(() => {
+		fetchMachines();
+	}, []);
+
+	const fetchMachines = async () => {
+		try {
+			const response = await fetch("/api/machines");
+			const data = await response.json();
+			setMachines(data.machines || []);
+			setError("");
+		} catch (err) {
+			setError("Failed to load machines");
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const toggleMachine = async (machineId, currentStatus) => {
+		try {
+			const response = await fetch("/api/machines", {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ machineId, allowed: !currentStatus }),
+			});
+			if (response.ok) await fetchMachines();
+		} catch (err) {
+			setError("Failed to update machine");
+		}
+	};
+
+	const deleteMachine = async (machineId) => {
+		if (!confirm("Delete this machine?")) return;
+		try {
+			const response = await fetch("/api/machines", {
+				method: "DELETE",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ machineId }),
+			});
+			if (response.ok) await fetchMachines();
+		} catch (err) {
+			setError("Failed to delete machine");
+		}
+	};
+
+	if (loading) return <div className="p-8 text-center">Loading...</div>;
+
+	return (
+		<div className="min-h-screen bg-gray-50">
+			<Head>
+				<title>Employee Console Auth</title>
+			</Head>
+
+			{/* Header */}
+			<div className="bg-gray-900 text-white p-6 text-center">
+				<h1 className="text-2xl font-bold">Employee Console</h1>
+				<p className="text-gray-300">Machine Authorization</p>
+			</div>
+
+			<div className="max-w-4xl mx-auto p-6">
+				{/* Error */}
+				{error && <div className="bg-red-50 text-red-700 p-3 rounded mb-6 border border-red-200">{error}</div>}
+
+				{/* Stats */}
+				<div className="grid grid-cols-3 gap-4 mb-6">
+					<div className="bg-white p-4 rounded shadow text-center">
+						<div className="text-2xl font-bold">{machines.length}</div>
+						<div className="text-sm text-gray-600">Total</div>
+					</div>
+					<div className="bg-white p-4 rounded shadow text-center">
+						<div className="text-2xl font-bold text-green-600">{machines.filter((m) => m.allowed).length}</div>
+						<div className="text-sm text-gray-600">Allowed</div>
+					</div>
+					<div className="bg-white p-4 rounded shadow text-center">
+						<div className="text-2xl font-bold text-red-600">{machines.filter((m) => !m.allowed).length}</div>
+						<div className="text-sm text-gray-600">Blocked</div>
+					</div>
+				</div>
+
+				{/* Machines */}
+				{machines.length === 0 ? (
+					<div className="bg-white p-8 rounded shadow text-center text-gray-500">
+						<p>No machines registered yet.</p>
+						<p className="text-sm">Machines appear when they first connect.</p>
+					</div>
+				) : (
+					<div className="space-y-3">
+						{machines.map((machine) => (
+							<div key={machine.id} className="bg-white p-4 rounded shadow">
+								<div className="flex items-center justify-between">
+									<div className="flex-1">
+										<div className="font-medium">{machine.name}</div>
+										<div className="text-sm text-gray-500 font-mono">{machine.id}</div>
+										<div className="text-xs text-gray-400">
+											Last seen: {new Date(machine.lastSeen).toLocaleString()}
+										</div>
+									</div>
+
+									<div className="flex items-center space-x-3">
+										{/* Status */}
+										<span
+											className={`px-2 py-1 rounded text-sm font-medium ${
+												machine.allowed
+													? "bg-green-100 text-green-800"
+													: "bg-red-100 text-red-800"
+											}`}
+										>
+											{machine.allowed ? "✓ Allowed" : "✗ Blocked"}
+										</span>
+
+										{/* Toggle Button */}
+										<button
+											onClick={() => toggleMachine(machine.id, machine.allowed)}
+											className={`px-3 py-1 rounded text-sm font-medium text-white ${
+												machine.allowed
+													? "bg-red-500 hover:bg-red-600"
+													: "bg-green-500 hover:bg-green-600"
+											}`}
+										>
+											{machine.allowed ? "Block" : "Allow"}
+										</button>
+
+										{/* Delete Button */}
+										<button
+											onClick={() => deleteMachine(machine.id)}
+											className="px-3 py-1 rounded text-sm font-medium text-white bg-gray-500 hover:bg-gray-600"
+										>
+											Delete
+										</button>
+									</div>
+								</div>
+							</div>
+						))}
+					</div>
+				)}
+			</div>
+		</div>
+	);
 }
